@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DepositBook 💰</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0f172a; color: #e2e8f0; font-family: 'Segoe UI', sans-serif; min-height: 100vh; }
+ 
+  /* AUTH */
+  #auth-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+  .auth-card { background: #1e293b; border: 1px solid #334155; border-radius: 20px; padding: 40px 36px; text-align: center; width: 100%; max-width: 380px; }
+  .auth-logo { font-size: 44px; margin-bottom: 10px; }
+  .auth-title { font-size: 26px; font-weight: 800; margin-bottom: 4px; letter-spacing: -0.5px; }
+  .auth-sub { color: #64748b; font-size: 14px; margin-bottom: 24px; }
+  .tab-row { display: flex; background: #0f172a; border-radius: 10px; padding: 4px; margin-bottom: 20px; gap: 4px; }
+  .tab-btn { flex: 1; padding: 8px 0; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s; background: none; color: #64748b; }
+  .tab-btn.active { background: #2563eb; color: #fff; }
+  .auth-form { display: flex; flex-direction: column; gap: 12px; text-align: left; }
+  .auth-hint { color: #475569; font-size: 12px; margin-top: 16px; }
+ 
+  /* INPUTS */
+  input[type=text], input[type=email], input[type=password] {
+    background: #0f172a; border: 1px solid #334155; border-radius: 10px;
+    padding: 12px 14px; color: #e2e8f0; font-size: 15px; outline: none;
+    width: 100%; transition: border 0.2s;
+  }
+  input:focus { border-color: #2563eb; }
+ 
+  /* BUTTONS */
+  .btn-primary { background: #2563eb; border: none; border-radius: 10px; padding: 12px 20px; color: #fff; font-weight: 700; font-size: 15px; cursor: pointer; width: 100%; }
+  .btn-primary:hover { background: #1d4ed8; }
+  .btn-ghost { background: none; border: 1px solid #334155; color: #94a3b8; border-radius: 8px; padding: 6px 14px; cursor: pointer; font-size: 13px; }
+  .btn-outline { background: none; border: 1px dashed #334155; color: #60a5fa; border-radius: 8px; padding: 7px 16px; cursor: pointer; font-size: 13px; }
+  .btn-cancel { background: none; border: 1px solid #334155; color: #94a3b8; border-radius: 8px; padding: 9px 0; cursor: pointer; font-size: 14px; width: 100%; margin-top: 8px; }
+ 
+  .error-msg { color: #f87171; font-size: 13px; }
+ 
+  /* APP */
+  #app-screen { display: none; }
+  .header { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; background: #1e293b; border-bottom: 1px solid #334155; }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .header-right { display: flex; align-items: center; gap: 10px; }
+  .logo { font-size: 17px; font-weight: 700; }
+  .badge { font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px; }
+  .badge.admin { background: #065f46; color: #34d399; }
+  .badge.viewer { background: #1e3a5f; color: #60a5fa; }
+  .user-name { font-size: 13px; color: #64748b; }
+ 
+  .month-nav { display: flex; align-items: center; justify-content: center; gap: 20px; padding: 14px 0 6px; }
+  .nav-btn { background: #1e293b; border: 1px solid #334155; color: #e2e8f0; border-radius: 8px; padding: 4px 16px; cursor: pointer; font-size: 22px; }
+  .month-label { font-size: 17px; font-weight: 700; min-width: 170px; text-align: center; }
+ 
+  .summary-row { display: flex; gap: 10px; padding: 10px 14px; flex-wrap: wrap; }
+  .card { flex: 1 1 110px; background: #1e293b; border-radius: 12px; padding: 12px 14px; border: 1px solid #334155; }
+  .card-label { font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+  .card-value { font-size: 20px; font-weight: 700; color: #f1f5f9; }
+ 
+  .admin-bar { display: flex; align-items: center; gap: 14px; padding: 0 14px 10px; flex-wrap: wrap; }
+  .admin-note { font-size: 12px; color: #475569; }
+ 
+  .table-wrap { overflow-x: auto; padding-bottom: 40px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th { padding: 10px 8px; background: #1e293b; color: #64748b; font-weight: 600; text-align: center; border-bottom: 2px solid #334155; position: sticky; top: 0; z-index: 2; white-space: nowrap; }
+  td { padding: 7px 8px; text-align: center; border-bottom: 1px solid #1e293b; }
+  .sticky-col { position: sticky; left: 0; z-index: 3; background: #1e293b; }
+  th.sticky-col { z-index: 4; }
+  .today-row { background: #1e293b66; }
+  .day-num { font-weight: 600; color: #94a3b8; }
+  .day-num.today { color: #f59e0b; }
+  .person-head { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .person-total { font-size: 11px; color: #34d399; font-weight: 700; }
+  .cell-wrap { display: flex; align-items: center; justify-content: center; gap: 4px; }
+ 
+  .tick-btn { width: 28px; height: 28px; border-radius: 6px; border: 1px solid #334155; background: #1e293b; color: #334155; font-weight: 700; font-size: 14px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: all 0.15s; }
+  .tick-btn.paid { border-color: #34d399; background: #065f46; color: #34d399; }
+  .tick-btn.viewer { cursor: default; }
+  .plus-btn { width: 18px; height: 18px; border-radius: 4px; border: 1px solid #334155; background: none; color: #60a5fa; cursor: pointer; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
+  .del-btn { background: none; border: none; color: #f87171; cursor: pointer; font-size: 11px; padding: 0 2px; }
+  .day-total { font-weight: 700; color: #34d399; }
+ 
+  /* MODAL */
+  .overlay { display: none; position: fixed; inset: 0; background: #00000090; z-index: 50; align-items: center; justify-content: center; }
+  .overlay.show { display: flex; }
+  .modal { background: #1e293b; border-radius: 16px; padding: 28px; min-width: 300px; border: 1px solid #334155; display: flex; flex-direction: column; gap: 0; }
+  .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+  .modal-sub { color: #94a3b8; font-size: 14px; margin-bottom: 16px; }
+  .bulk-grid { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+  .bulk-btn { flex: 1 1 60px; padding: 12px 8px; border-radius: 10px; background: #0f172a; border: 1px solid #334155; color: #e2e8f0; cursor: pointer; font-weight: 700; font-size: 15px; text-align: center; }
+  .bulk-btn:hover { border-color: #2563eb; }
+  .bulk-days { font-size: 11px; color: #94a3b8; display: block; }
+ 
+  .empty { text-align: center; color: #475569; padding: 60px 20px; font-size: 15px; }
+ 
+  /* TOAST */
+  #toast { display: none; position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1e293b; border: 1px solid #334155; color: #e2e8f0; padding: 12px 24px; border-radius: 12px; font-size: 14px; font-weight: 600; z-index: 100; box-shadow: 0 8px 32px #00000060; white-space: nowrap; }
+ 
+  .member-add-form { display: flex; flex-direction: column; gap: 10px; }
+</style>
+</head>
+<body>
+ 
+<!-- ── AUTH SCREEN ─────────────────────────────────── -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">💰</div>
+    <h1 class="auth-title">DepositBook</h1>
+    <p class="auth-sub">Group savings tracker</p>
+ 
+    <div class="tab-row">
+      <button class="tab-btn active" id="tab-login" onclick="switchTab('login')">Login</button>
+      <button class="tab-btn" id="tab-signup" onclick="switchTab('signup')">Sign Up</button>
+    </div>
+ 
+    <!-- Login form -->
+    <div id="login-form" class="auth-form">
+      <input type="email" id="login-email" placeholder="Email address" />
+      <input type="password" id="login-pass" placeholder="Password" />
+      <p class="error-msg" id="login-error"></p>
+      <button class="btn-primary" onclick="handleLogin()">Login</button>
+    </div>
+ 
+    <!-- Signup form -->
+    <div id="signup-form" class="auth-form" style="display:none">
+      <input type="text" id="signup-name" placeholder="Your full name" />
+      <input type="email" id="signup-email" placeholder="Email address" />
+      <input type="password" id="signup-pass" placeholder="Password (min 6 chars)" />
+      <p class="error-msg" id="signup-error"></p>
+      <button class="btn-primary" onclick="handleSignup()">Create Account</button>
+      <p class="auth-hint">New accounts start as viewers. Admin upgrades access.</p>
+    </div>
+  </div>
+</div>
+ 
+<!-- ── APP SCREEN ──────────────────────────────────── -->
+<div id="app-screen">
+  <div class="header">
+    <div class="header-left">
+      <span class="logo">💰 DepositBook</span>
+      <span class="badge" id="role-badge">Viewer</span>
+    </div>
+    <div class="header-right">
+      <span class="user-name" id="user-name-label"></span>
+      <button class="btn-ghost" onclick="handleLogout()">Logout</button>
+    </div>
+  </div>
+ 
+  <div class="month-nav">
+    <button class="nav-btn" onclick="changeMonth(-1)">‹</button>
+    <span class="month-label" id="month-label"></span>
+    <button class="nav-btn" onclick="changeMonth(1)">›</button>
+  </div>
+ 
+  <div class="summary-row">
+    <div class="card"><div class="card-label">Total Collected</div><div class="card-value" id="sum-collected">₹0</div></div>
+    <div class="card"><div class="card-label">Members</div><div class="card-value" id="sum-members">0</div></div>
+    <div class="card"><div class="card-label">Expected</div><div class="card-value" id="sum-expected">₹0</div></div>
+    <div class="card"><div class="card-label">Progress</div><div class="card-value" id="sum-progress">0%</div></div>
+  </div>
+ 
+  <div class="admin-bar" id="admin-bar" style="display:none">
+    <button class="btn-outline" onclick="openAddMember()">+ Add Member</button>
+    <span class="admin-note">Click ✕ on a member to remove them</span>
+  </div>
+ 
+  <div class="table-wrap">
+    <table id="main-table">
+      <thead id="table-head"></thead>
+      <tbody id="table-body"></tbody>
+    </table>
+    <div class="empty" id="empty-msg" style="display:none">No members yet. Admin can add members above.</div>
+  </div>
+</div>
+ 
+<!-- ── BULK PAYMENT MODAL ──────────────────────────── -->
+<div class="overlay" id="bulk-modal">
+  <div class="modal">
+    <div class="modal-title">Bulk Payment</div>
+    <div class="modal-sub" id="bulk-modal-sub"></div>
+    <div class="bulk-grid">
+      <button class="bulk-btn" onclick="doBulkPay(40)">₹40<span class="bulk-days">2 days</span></button>
+      <button class="bulk-btn" onclick="doBulkPay(60)">₹60<span class="bulk-days">3 days</span></button>
+      <button class="bulk-btn" onclick="doBulkPay(100)">₹100<span class="bulk-days">5 days</span></button>
+      <button class="bulk-btn" onclick="doBulkPay(200)">₹200<span class="bulk-days">10 days</span></button>
+    </div>
+    <button class="btn-cancel" onclick="closeModal('bulk-modal')">Cancel</button>
+  </div>
+</div>
+ 
+<!-- ── ADD MEMBER MODAL ────────────────────────────── -->
+<div class="overlay" id="add-member-modal">
+  <div class="modal">
+    <div class="modal-title">Add Member</div>
+    <div class="member-add-form">
+      <input type="text" id="new-member-name" placeholder="Full name" />
+      <input type="email" id="new-member-email" placeholder="Email (optional)" />
+      <button class="btn-primary" onclick="handleAddMember()">Add Member</button>
+      <button class="btn-cancel" onclick="closeModal('add-member-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+ 
+<!-- ── TOAST ───────────────────────────────────────── -->
+<div id="toast"></div>
+ 
+<!-- ── FIREBASE SDK ────────────────────────────────── -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {
+  getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  signOut, onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import {
+  getFirestore, doc, setDoc, getDoc, collection,
+  onSnapshot, deleteDoc
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+ 
+// ── Firebase config ────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyAXlGO2iOIxhgmWE4CqIA_G20ZhFvB3JA0",
+  authDomain: "savings-tracker-cb4f5.firebaseapp.com",
+  projectId: "savings-tracker-cb4f5",
+  storageBucket: "savings-tracker-cb4f5.firebasestorage.app",
+  messagingSenderId: "889797036907",
+  appId: "1:889797036907:web:03f209a717e2bdf9451a2e"
+};
+const fireApp = initializeApp(firebaseConfig);
+const auth = getAuth(fireApp);
+const db = getFirestore(fireApp);
+ 
+// ── State ──────────────────────────────────────────
+let currentUser = null, userRole = null, userName = "";
+let members = [], payments = {};
+let currentMonth = new Date().getMonth(), currentYear = new Date().getFullYear();
+let bulkTarget = null; // { uid, name, day }
+let unsubMembers = null, unsubPayments = null;
+ 
+const DAILY = 20;
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyhaxA7ZNpI_LLait6tCwZR0SaaOlSaVeNjMaAKVLsZKFToqtoz1aIz9-Y5HGgdHwVD/exec";
+ 
+function pad(n) { return String(n).padStart(2, "0"); }
+function daysInMonth(y, m) { return new Date(y, m + 1, 0).getDate(); }
+function monthId() { return `${currentYear}-${pad(currentMonth + 1)}`; }
+ 
+// ── Auth state ─────────────────────────────────────
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    currentUser = user;
+    try {
+      const snap = await getDoc(doc(db, "users", user.uid));
+      if (snap.exists()) {
+        userRole = snap.data().role || "viewer";
+        userName = snap.data().name || user.email;
+      } else {
+        // Doc missing — create it automatically as viewer
+        const fallbackName = user.displayName || user.email.split("@")[0];
+        await setDoc(doc(db, "users", user.uid), {
+          name: fallbackName, email: user.email, role: "viewer"
+        });
+        userRole = "viewer";
+        userName = fallbackName;
+      }
+      showApp();
+    } catch (err) {
+      // Firestore rules may be blocking — still show app as viewer
+      userRole = "viewer";
+      userName = user.displayName || user.email.split("@")[0];
+      showApp();
+    }
+  } else {
+    currentUser = null; userRole = null;
+    showAuth();
+  }
+});
+ 
+// ── Show/hide screens ──────────────────────────────
+function showAuth() {
+  document.getElementById("auth-screen").style.display = "flex";
+  document.getElementById("app-screen").style.display = "none";
+  if (unsubMembers) { unsubMembers(); unsubMembers = null; }
+  if (unsubPayments) { unsubPayments(); unsubPayments = null; }
+}
+ 
+function showApp() {
+  document.getElementById("auth-screen").style.display = "none";
+  document.getElementById("app-screen").style.display = "block";
+  document.getElementById("user-name-label").textContent = userName;
+  const badge = document.getElementById("role-badge");
+  badge.textContent = userRole === "admin" ? "Admin" : "Viewer";
+  badge.className = "badge " + userRole;
+  document.getElementById("admin-bar").style.display = userRole === "admin" ? "flex" : "none";
+  subscribeMembers();
+  subscribePayments();
+  renderMonthNav();
+}
+ 
+// ── Firestore subscriptions ────────────────────────
+function subscribeMembers() {
+  if (unsubMembers) unsubMembers();
+  unsubMembers = onSnapshot(collection(db, "users"), snap => {
+    members = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+    renderTable();
+  });
+}
+ 
+function subscribePayments() {
+  if (unsubPayments) unsubPayments();
+  unsubPayments = onSnapshot(doc(db, "payments", monthId()), snap => {
+    payments = snap.exists() ? snap.data() : {};
+    renderTable();
+  });
+}
+ 
+// ── Render ─────────────────────────────────────────
+function renderMonthNav() {
+  const mn = new Date(currentYear, currentMonth).toLocaleString("default", { month: "long" });
+  document.getElementById("month-label").textContent = `${mn} ${currentYear}`;
+}
+ 
+function renderTable() {
+  const today = new Date();
+  const dim = daysInMonth(currentYear, currentMonth);
+  const isAdmin = userRole === "admin";
+ 
+  // Summary
+  const grand = members.reduce((s, m) => s + totalForMember(m.uid, dim), 0);
+  const expected = members.length * dim * DAILY;
+  document.getElementById("sum-collected").textContent = `₹${grand}`;
+  document.getElementById("sum-members").textContent = members.length;
+  document.getElementById("sum-expected").textContent = `₹${expected}`;
+  document.getElementById("sum-progress").textContent = expected ? `${Math.round(grand / expected * 100)}%` : "0%";
+ 
+  if (members.length === 0) {
+    document.getElementById("main-table").style.display = "none";
+    document.getElementById("empty-msg").style.display = "block";
+    return;
+  }
+  document.getElementById("main-table").style.display = "";
+  document.getElementById("empty-msg").style.display = "none";
+ 
+  // Header
+  let hRow = `<tr><th class="sticky-col" style="min-width:55px">Day</th>`;
+  members.forEach(m => {
+    hRow += `<th style="min-width:90px"><div class="person-head">
+      <span>${m.name} ${isAdmin ? `<button class="del-btn" onclick="removeMember('${m.uid}')">✕</button>` : ""}</span>
+      <span class="person-total">₹${totalForMember(m.uid, dim)}</span>
+    </div></th>`;
+  });
+  hRow += `<th>Day Total</th></tr>`;
+  document.getElementById("table-head").innerHTML = hRow;
+ 
+  // Body
+  let body = "";
+  for (let day = 1; day <= dim; day++) {
+    const isToday = today.getDate() === day && today.getMonth() === currentMonth && today.getFullYear() === currentYear;
+    body += `<tr${isToday ? ' class="today-row"' : ""}>`;
+    body += `<td class="sticky-col"><span class="day-num${isToday ? " today" : ""}">${day}${isToday ? " ●" : ""}</span></td>`;
+    members.forEach(m => {
+      const paid = isPaid(m.uid, day);
+      body += `<td><div class="cell-wrap">
+        <button class="tick-btn${paid ? " paid" : ""}${!isAdmin ? " viewer" : ""}"
+          onclick="${isAdmin ? `togglePay('${m.uid}',${day})` : "void(0)"}">
+          ${paid ? "✓" : ""}
+        </button>
+        ${isAdmin ? `<button class="plus-btn" onclick="openBulk('${m.uid}','${m.name}',${day})">+</button>` : ""}
+      </div></td>`;
+    });
+    body += `<td class="day-total">₹${totalForDay(day)}</td></tr>`;
+  }
+  document.getElementById("table-body").innerHTML = body;
+}
+ 
+function isPaid(uid, day) { return !!payments[`${uid}_${pad(day)}`]; }
+function totalForMember(uid, dim) {
+  let t = 0;
+  for (let d = 1; d <= dim; d++) if (isPaid(uid, d)) t += DAILY;
+  return t;
+}
+function totalForDay(day) {
+  return members.filter(m => isPaid(m.uid, day)).length * DAILY;
+}
+ 
+// ── Toggle payment ─────────────────────────────────
+window.togglePay = async function(uid, day) {
+  const key = `${uid}_${pad(day)}`;
+  const newVal = !payments[key];
+  const updated = { ...payments, [key]: newVal };
+  await setDoc(doc(db, "payments", monthId()), updated);
+  // Sheets sync
+  const member = members.find(m => m.uid === uid);
+  syncSheets({ action:"togglePayment", name: member?.name,
+    date: `${currentYear}-${pad(currentMonth+1)}-${pad(day)}`,
+    paid: newVal });
+};
+ 
+// ── Bulk pay ───────────────────────────────────────
+window.openBulk = function(uid, name, day) {
+  bulkTarget = { uid, name, day };
+  document.getElementById("bulk-modal-sub").innerHTML = `<b>${name}</b> — auto-tick from Day ${day}`;
+  openModal("bulk-modal");
+};
+window.doBulkPay = async function(amount) {
+  if (!bulkTarget) return;
+  const { uid, day } = bulkTarget;
+  const ticks = Math.floor(amount / DAILY);
+  const dim = daysInMonth(currentYear, currentMonth);
+  const updated = { ...payments };
+  for (let i = 0; i < ticks && (day + i - 1) < dim; i++) {
+    updated[`${uid}_${pad(day + i)}`] = true;
+  }
+  await setDoc(doc(db, "payments", monthId()), updated);
+  closeModal("bulk-modal");
+  showToast(`${ticks} days marked paid!`);
+};
+ 
+// ── Add member ─────────────────────────────────────
+window.openAddMember = function() { openModal("add-member-modal"); };
+window.handleAddMember = async function() {
+  const name = document.getElementById("new-member-name").value.trim();
+  const email = document.getElementById("new-member-email").value.trim();
+  if (!name) return;
+  const uid = "member_" + Date.now();
+  await setDoc(doc(db, "users", uid), { name, email, role: "viewer" });
+  document.getElementById("new-member-name").value = "";
+  document.getElementById("new-member-email").value = "";
+  closeModal("add-member-modal");
+  showToast("Member added!");
+};
+ 
+// ── Remove member ──────────────────────────────────
+window.removeMember = async function(uid) {
+  if (!confirm("Remove this member?")) return;
+  await deleteDoc(doc(db, "users", uid));
+  showToast("Member removed.");
+};
+ 
+// ── Month navigation ───────────────────────────────
+window.changeMonth = function(dir) {
+  currentMonth += dir;
+  if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+  if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+  renderMonthNav();
+  subscribePayments();
+};
+ 
+// ── Auth handlers ──────────────────────────────────
+window.handleLogin = async function() {
+  const email = document.getElementById("login-email").value.trim();
+  const pass = document.getElementById("login-pass").value;
+  document.getElementById("login-error").textContent = "";
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+  } catch (e) {
+    document.getElementById("login-error").textContent = "Invalid email or password.";
+  }
+};
+ 
+window.handleSignup = async function() {
+  const name = document.getElementById("signup-name").value.trim();
+  const email = document.getElementById("signup-email").value.trim();
+  const pass = document.getElementById("signup-pass").value;
+  document.getElementById("signup-error").textContent = "";
+  if (!name) { document.getElementById("signup-error").textContent = "Please enter your name."; return; }
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+    await setDoc(doc(db, "users", cred.user.uid), { name, email, role: "viewer" });
+    showToast("Account created! Login to continue.");
+    switchTab("login");
+  } catch (e) {
+    document.getElementById("signup-error").textContent = e.message.replace("Firebase: ","").replace(/\(.*\)/,"");
+  }
+};
+ 
+window.handleLogout = function() { signOut(auth); };
+ 
+// ── Tab switch ─────────────────────────────────────
+window.switchTab = function(tab) {
+  document.getElementById("login-form").style.display = tab === "login" ? "flex" : "none";
+  document.getElementById("signup-form").style.display = tab === "signup" ? "flex" : "none";
+  document.getElementById("tab-login").className = "tab-btn" + (tab === "login" ? " active" : "");
+  document.getElementById("tab-signup").className = "tab-btn" + (tab === "signup" ? " active" : "");
+  document.getElementById("login-error").textContent = "";
+  document.getElementById("signup-error").textContent = "";
+};
+ 
+// ── Modal helpers ──────────────────────────────────
+window.openModal = function(id) { document.getElementById(id).classList.add("show"); };
+window.closeModal = function(id) { document.getElementById(id).classList.remove("show"); };
+document.querySelectorAll(".overlay").forEach(o => {
+  o.addEventListener("click", e => { if (e.target === o) o.classList.remove("show"); });
+});
+ 
+// ── Toast ──────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.style.display = "block";
+  setTimeout(() => t.style.display = "none", 3000);
+}
+ 
+// ── Google Sheets sync ─────────────────────────────
+async function syncSheets(payload) {
+  try {
+    await fetch(APPS_SCRIPT_URL, { method: "POST", body: JSON.stringify(payload) });
+  } catch(e) { /* silent fail */ }
+}
+</script>
+</body>
+</html>
