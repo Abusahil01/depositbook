@@ -33,6 +33,7 @@
   .btn-primary:hover { background: #1d4ed8; }
   .btn-ghost { background: none; border: 1px solid #334155; color: #94a3b8; border-radius: 8px; padding: 6px 14px; cursor: pointer; font-size: 13px; }
   .btn-outline { background: none; border: 1px dashed #334155; color: #60a5fa; border-radius: 8px; padding: 7px 16px; cursor: pointer; font-size: 13px; }
+  .btn-wa { background: #065f46; border: none; color: #34d399; border-radius: 8px; padding: 7px 16px; cursor: pointer; font-size: 13px; font-weight: 600; }
   .btn-cancel { background: none; border: 1px solid #334155; color: #94a3b8; border-radius: 8px; padding: 9px 0; cursor: pointer; font-size: 14px; width: 100%; margin-top: 8px; }
  
   .error-msg { color: #f87171; font-size: 13px; }
@@ -162,6 +163,7 @@
   <div class="admin-bar" id="admin-bar" style="display:none">
     <button class="btn-outline" onclick="openAddMember()">+ Add Member</button>
     <span class="admin-note">Click ✕ on a member to remove them</span>
+    <button class="btn-wa" onclick="shareOnWhatsApp()">📲 Share Report on WhatsApp</button>
   </div>
  
   <div class="table-wrap">
@@ -504,6 +506,43 @@ async function syncSheets(payload) {
     await fetch(APPS_SCRIPT_URL, { method: "POST", body: JSON.stringify(payload) });
   } catch(e) { /* silent fail */ }
 }
+//share by whatsapp
+window.shareOnWhatsApp = function() {
+  const today = new Date();
+  const day = today.getDate();
+  const dateStr = today.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
+
+  const paid = [], unpaid = {}, missedDays = {};
+
+  members.forEach(m => {
+    if (isPaid(m.uid, day)) {
+      paid.push(m.name);
+    } else {
+      unpaid.push(m.name);
+    }
+    let missed = 0;
+    for (let d = 1; d <= day; d++) { if (!isPaid(m.uid, d)) missed++; }
+    if (missed > 0) missedDays[m.name] = missed;
+  });
+
+  let msg = "💰 *DepositBook Daily Report*\n";
+  msg += "📅 " + dateStr + "\n\n";
+  msg += "✅ *Paid today (" + paid.length + "):*\n";
+  msg += paid.length > 0 ? paid.map(n => "  • " + n).join("\n") : "  None";
+  msg += "\n\n";
+  msg += "❌ *Not paid today (" + unpaid.length + "):*\n";
+  msg += unpaid.length > 0 ? unpaid.map(n => "  • " + n).join("\n") : "  None";
+  msg += "\n\n";
+  if (Object.keys(missedDays).length > 0) {
+    msg += "📊 *Missed days this month:*\n";
+    Object.entries(missedDays).forEach(([name, d]) => {
+      msg += "  • " + name + ": " + d + " day" + (d > 1 ? "s" : "") + "\n";
+    });
+  }
+  msg += "\n💵 *Total collected today: ₹" + (paid.length * 10) + "*";
+
+  window.open("https://wa.me/?text=7317779887" + encodeURIComponent(msg), "_blank");
+};
 </script>
 </body>
 </html>
