@@ -430,13 +430,32 @@ window.doBulkPay = async function(amount) {
 // ── Add member ─────────────────────────────────────
 window.openAddMember = function() { openModal("add-member-modal"); };
 window.handleAddMember = async function() {
+
+  // 🔴 BLOCK non-admin users
+  if (userRole !== "admin") {
+    showToast("Only admin can add members");
+    return;
+  }
+
   const name = document.getElementById("new-member-name").value.trim();
   const email = document.getElementById("new-member-email").value.trim();
-  if (!name) return;
+
+  if (!name) {
+    showToast("Enter member name");
+    return;
+  }
+
   const uid = "member_" + Date.now();
-  await setDoc(doc(db, "users", uid), { name, email, role: "viewer" });
+
+  await setDoc(doc(db, "users", uid), {
+    name,
+    email,
+    role: "viewer"
+  });
+
   document.getElementById("new-member-name").value = "";
   document.getElementById("new-member-email").value = "";
+
   closeModal("add-member-modal");
   showToast("Member added!");
 };
