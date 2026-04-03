@@ -250,16 +250,27 @@ onAuthStateChanged(auth, async (user) => {
   if (user) {
     currentUser = user;
     try {
-      const snap = await getDoc(doc(db, "users", user.uid));
+      const snap = await getDoc(doc(db, "auth_users", user.uid));
       if (snap.exists()) {
         userRole = snap.data().role || "viewer";
         userName = snap.data().name || user.email;
       } else {
         // Doc missing — create it automatically as viewer
         const fallbackName = user.displayName || user.email.split("@")[0];
-        await setDoc(doc(db, "users", user.uid), {
-          name: fallbackName, email: user.email, role: "viewer"
-        });
+        await setDoc(doc(db, "auth_users", user.uid), {
+  name: fallbackName, email: user.email, role: "viewer"
+});
+/*
+
+---
+
+This separates two collections:
+- `auth_users` → login accounts (viewers, admins) — never shown in the sheet
+- `users` → member list — only admin adds these manually ✅
+
+Also update your **Firestore rules** to include `auth_users`:
+*/
+
         userRole = "viewer";
         userName = fallbackName;
       }
@@ -466,7 +477,7 @@ window.handleSignup = async function() {
   if (!name) { document.getElementById("signup-error").textContent = "Please enter your name."; return; }
   try {
     const cred = await createUserWithEmailAndPassword(auth, email, pass);
-    await setDoc(doc(db, "users", cred.user.uid), { name, email, role: "viewer" });
+    await setDoc(doc(db, "auth_users", cred.user.uid), { name, email, role: "viewer" });
     showToast("Account created! Login to continue.");
     switchTab("login");
   } catch (e) {
@@ -512,7 +523,7 @@ window.shareOnWhatsApp = function() {
   const day = today.getDate();
   const dateStr = today.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
 
-  const paid = [], unpaid = {}, missedDays = {};
+  const paid = [], unpaid = [], missedDays = {};
 
   members.forEach(m => {
     if (isPaid(m.uid, day)) {
@@ -539,9 +550,9 @@ window.shareOnWhatsApp = function() {
       msg += "  • " + name + ": " + d + " day" + (d > 1 ? "s" : "") + "\n";
     });
   }
-  msg += "\n💵 *Total collected today: ₹" + (paid.length * 10) + "*";
+  msg += "\n💵 *Total collected today: ₹" + (paid.length * DAILY) + "*";
 
-  window.open("https://wa.me/?text=7317779887" + encodeURIComponent(msg), "_blank");
+  window.open("https://wa.me/917317779887?text=" + encodeURIComponent(msg), "_blank");
 };
 </script>
 </body>
